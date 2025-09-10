@@ -18,14 +18,18 @@ jobs:
           echo "${{ secrets.KEY }}" > /tmp/private_key
           chmod 600 /tmp/private_key
 
-      - name: 3. Backup da aplicação atual no servidor
+      - name: 3. Backup da aplicação atual no servidor (em formato .zip)
         run: |
           ssh -i /tmp/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@${{ secrets.HOST }} '
+            # Garante que o utilitário zip esteja instalado
+            sudo apt-get update && sudo apt-get install -y zip
+
             TIMESTAMP=$(date +%Y%m%d-%H%M%S)
             if [ -d "/home/ubuntu/app" ]; then
-              echo "Pasta /home/ubuntu/app encontrada. Criando backup..."
-              tar -czvf /home/ubuntu/app-backup-$TIMESTAMP.tar.gz -C /home/ubuntu/app
-              echo "Backup criado em /home/ubuntu/app-backup-$TIMESTAMP.tar.gz"
+              echo "Pasta /home/ubuntu/app encontrada. Criando backup .zip..."
+              # Navega para o diretório pai para criar o zip com os caminhos corretos
+              cd /home/ubuntu && zip -r app-backup-$TIMESTAMP.zip app
+              echo "Backup criado em /home/ubuntu/app-backup-$TIMESTAMP.zip"
             else
               echo "Pasta /home/ubuntu/app não encontrada. Pulando backup."
             fi
