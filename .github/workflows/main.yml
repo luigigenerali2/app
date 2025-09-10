@@ -24,7 +24,7 @@ jobs:
             TIMESTAMP=$(date +%Y%m%d-%H%M%S)
             if [ -d "/home/ubuntu/app" ]; then
               echo "Pasta /home/ubuntu/app encontrada. Criando backup..."
-              tar -czvf /home/ubuntu/app-backup-$TIMESTAMP.tar.gz -C /home/ubuntu app
+              tar -czvf /home/ubuntu/app-backup-$TIMESTAMP.tar.gz -C /home/ubuntu/app
               echo "Backup criado em /home/ubuntu/app-backup-$TIMESTAMP.tar.gz"
             else
               echo "Pasta /home/ubuntu/app não encontrada. Pulando backup."
