@@ -1,0 +1,75 @@
+name: Publicação Automática Flask
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+jobs:
+  deploy:
+    name: Deploy da Aplicação Flask
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Checkout do código
+        uses: actions/checkout@v3
+
+      - name: 2. Configura a chave SSH
+        run: |
+          echo "${{ secrets.KEY }}" > /tmp/private_key
+          chmod 600 /tmp/private_key
+
+      - name: 3. Backup da aplicação atual no servidor
+        run: |
+          ssh -i /tmp/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@${{ secrets.HOST }} '
+            TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+            if [ -d "/home/ubuntu/app" ]; then
+              echo "Pasta /home/ubuntu/app encontrada. Criando backup..."
+              tar -czvf /home/ubuntu/app-backup-$TIMESTAMP.tar.gz -C /home/ubuntu app
+              echo "Backup criado em /home/ubuntu/app-backup-$TIMESTAMP.tar.gz"
+            else
+              echo "Pasta /home/ubuntu/app não encontrada. Pulando backup."
+            fi
+          '
+      
+      - name: 4. Garante que a pasta da aplicação existe e tem as permissões corretas
+        run: |
+          ssh -i /tmp/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@${{ secrets.HOST }} "
+            sudo mkdir -p /home/ubuntu/app &&
+            sudo chown -R ubuntu:ubuntu /home/ubuntu/app &&
+            sudo chmod -R 755 /home/ubuntu/app
+          "
+
+      - name: 5. Transfere os novos arquivos da aplicação
+        run: |
+          scp -i /tmp/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -r * ubuntu@${{ secrets.HOST }}:/home/ubuntu/app/
+
+      - name: 6. Instala as dependências Python
+        run: |
+          ssh -i /tmp/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@${{ secrets.HOST }} "
+            sudo apt-get update && sudo apt-get install python3-pip -y &&
+            pip3 install -r /home/ubuntu/app/requirements.txt
+          "
+
+      - name: 7. Reinicia o serviço da aplicação com systemd
+        run: |
+          ssh -i /tmp/private_key -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ubuntu@${{ secrets.HOST }} "
+            sudo systemctl restart hello_app.service
+          "
+
+      - name: 8. Limpa o arquivo de chave privada
+        if: always()
+        run: |
+          rm /tmp/private_key
+
+      - name: 9. [NOVO] Notificação no Discord
+        if: always() # Garante que a notificação seja enviada sempre
+        uses: sarisia/actions-status-discord@v1
+        with:
+          webhook: https://discord.com/api/webhooks/1226683343693807756/9AJf-Y95qX7BEJWgj-LLPiMMz6yCxWOqGR016Iq2udStd5ekzmSa7phpV1UQHKH8bV5y
+          # RECOMENDADO: Mova a URL acima para os Secrets do repositório com o nome DISCORD_WEBHOOK_URL
+          # e substitua a linha acima por: webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          status: ${{ job.status }}
+          title: "Deploy da Aplicação Flask"
+          description: "Deploy no repositório ${{ github.repository }} finalizado."
+          footer: "Ação disparada por ${{ github.actor }}"
+          color: ${{ job.status == 'success' && '0x00FF00' || '0xFF0000' }} # Verde para sucesso, Vermelho para falha
