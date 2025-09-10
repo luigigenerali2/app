@@ -65,7 +65,7 @@ jobs:
         if: always() # Garante que a notificação seja enviada sempre
         uses: sarisia/actions-status-discord@v1
         with:
-          webhook: https://discord.com/api/webhooks/1226683343693807756/9AJf-Y95qX7BEJWgj-LLPiMMz6yCxWOqGR016Iq2udStd5ekzmSa7phpV1UQHKH8bV5y
+          webhook: https://discord.com/api/webhooks/1415467967281627196/2_MePcq8wlVirn6Kw81mP9UAa5eM-uODkCNRf5epe-vvEvleucHvQ9LRRgoHOaUO493E
           # RECOMENDADO: Mova a URL acima para os Secrets do repositório com o nome DISCORD_WEBHOOK_URL
           # e substitua a linha acima por: webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
           status: ${{ job.status }}
